@@ -3,6 +3,7 @@ import FirebaseCore
 
 @available(iOS 16.0, *)
 public struct HKAuthKit {
+    @MainActor
     public static func configure(
         with configuration: AuthenticationConfiguration
     ) {
@@ -13,39 +14,14 @@ public struct HKAuthKit {
         ConfigurationManager.shared.setConfiguration(configuration)
     }
     
-    public static func createLoginView(
-        onSuccess: @escaping (User) -> Void,
-        onRegister: @escaping () -> Void
-    ) -> some View {
-        LoginView(onSuccess: onSuccess, onRegister: onRegister)
+    // MARK: - Service Access
+    public static var authenticationService: AuthenticationServiceProtocol {
+        FirebaseAuthenticationService.shared
     }
     
-    public static func createRegisterView(
-        onSuccess: @escaping (User) -> Void,
-        onLogin: @escaping () -> Void
-    ) -> some View {
-        RegisterView(onSuccess: onSuccess, onLogin: onLogin)
-    }
-    
-    public static func createForgotPasswordView(
-        onSuccess: @escaping () -> Void,
-        onBack: @escaping () -> Void
-    ) -> some View {
-        ForgotPasswordView(onSuccess: onSuccess, onBack: onBack)
-    }
-    
-    public static func createPasswordView(
-        email: String,
-        onSuccess: @escaping (User) -> Void,
-        onForgotPassword: @escaping () -> Void,
-        onBack: @escaping () -> Void
-    ) -> some View {
-        PasswordView(
-            email: email,
-            onSuccess: onSuccess,
-            onForgotPassword: onForgotPassword,
-            onBack: onBack
-        )
+    @MainActor
+    public static var configuration: AuthenticationConfiguration? {
+        ConfigurationManager.shared.configuration
     }
 }
 

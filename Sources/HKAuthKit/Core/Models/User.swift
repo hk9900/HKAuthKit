@@ -1,4 +1,5 @@
 import Foundation
+import FirebaseAuth
 
 public struct User: Codable, Identifiable, Equatable {
     public let id: String
