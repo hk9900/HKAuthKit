@@ -23,6 +23,11 @@ public struct HKAuthKit {
     public static var configuration: AuthenticationConfiguration? {
         ConfigurationManager.shared.configuration
     }
+    
+    // MARK: - Utilities
+    public static var validationUtilities: ValidationUtilities.Type {
+        return ValidationUtilities.self
+    }
 }
 
 // MARK: - Configuration Manager
