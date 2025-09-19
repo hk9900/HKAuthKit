@@ -60,4 +60,12 @@ public struct AuthenticationConfiguration {
         self.requireNumbers = requireNumbers
         self.splashScreenDuration = splashScreenDuration
     }
+    
+    // MARK: - Default Configuration
+    public static let `default` = AuthenticationConfiguration(
+        firebaseProjectId: "default-project",
+        firebaseApiKey: "default-api-key",
+        firebaseAppId: "default-app-id",
+        appName: "TestingCursor"
+    )
 }

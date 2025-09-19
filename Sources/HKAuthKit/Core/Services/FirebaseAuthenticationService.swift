@@ -1,6 +1,11 @@
 import Foundation
+import FirebaseCore
 import FirebaseAuth
 import FirebaseFirestore
+import GoogleSignIn
+#if canImport(UIKit)
+import UIKit
+#endif
 
 public final class FirebaseAuthenticationService: AuthenticationServiceProtocol {
     public static let shared = FirebaseAuthenticationService()
@@ -93,9 +98,7 @@ public final class FirebaseAuthenticationService: AuthenticationServiceProtocol 
     // MARK: - Social Authentication
     
     public func signInWithGoogle() async throws -> User {
-        // Placeholder implementation
-        try await Task.sleep(nanoseconds: 1_200_000_000)
-        throw AuthenticationError.googleSignInFailed
+        return try await GoogleSignInService.shared.signIn()
     }
     
     public func signInWithApple() async throws -> User {
@@ -232,6 +235,7 @@ public final class FirebaseAuthenticationService: AuthenticationServiceProtocol 
         )
     }
     
+    
     private func updateUserDocument(uid: String, fullName: String?, profileImageUrl: String?) async throws {
         var updateData: [String: Any] = [
             AuthenticationConstants.UserFields.updatedAt: Date()
@@ -271,4 +275,22 @@ public final class FirebaseAuthenticationService: AuthenticationServiceProtocol 
         }
         return .unknown(error.localizedDescription)
     }
+    
+    #if canImport(UIKit)
+    @MainActor
+    private func getPresentingViewController() async -> UIViewController? {
+        guard let windowScene = await UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = await windowScene.windows.first,
+              let rootViewController = await window.rootViewController else {
+            return nil
+        }
+        
+        return rootViewController
+    }
+    #else
+    @MainActor
+    private func getPresentingViewController() async -> Any? {
+        return nil
+    }
+    #endif
 }

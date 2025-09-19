@@ -10,8 +10,16 @@ public struct HKAuthKit {
         // Configure Firebase
         FirebaseApp.configure()
         
+        // Configure Google Sign-In
+        GoogleSignInConfiguration.shared.configure()
+        
         // Store configuration
         ConfigurationManager.shared.setConfiguration(configuration)
+    }
+    
+    // MARK: - URL Handling
+    public static func handleURL(_ url: URL) -> Bool {
+        return GoogleSignInConfiguration.shared.handleURL(url)
     }
     
     // MARK: - Service Access

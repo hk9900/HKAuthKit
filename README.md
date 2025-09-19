@@ -1,8 +1,8 @@
 # HKAuthKit
 
-A comprehensive authentication framework for iOS applications built with SwiftUI and Firebase.
+A comprehensive authentication framework for iOS applications built with SwiftUI and Firebase. HKAuthKit provides a complete authentication solution with support for multiple authentication methods, built-in validation, and seamless Firebase integration.
 
-## Features
+## ✨ Features
 
 - 🔐 **Multiple Authentication Methods**: Email/password, Google Sign-In, Apple Sign-In
 - 🔥 **Firebase Integration**: Built on Firebase Auth with Firestore support
@@ -12,15 +12,17 @@ A comprehensive authentication framework for iOS applications built with SwiftUI
 - 🔧 **Configurable**: Flexible configuration for different environments
 - ✅ **Validation**: Built-in email and password validation utilities
 - 🚀 **Modern Swift**: Uses async/await and modern Swift concurrency
+- 🌐 **Cross-Platform**: Supports iOS and macOS
+- 🔗 **URL Handling**: Built-in URL scheme handling for social authentication
 
-## Requirements
+## 📋 Requirements
 
-- iOS 16.0+
+- iOS 16.0+ / macOS 13.0+
 - Swift 5.9+
 - Xcode 15.0+
 - Firebase project setup
 
-## Installation
+## 🚀 Installation
 
 ### Swift Package Manager
 
@@ -31,41 +33,37 @@ Add HKAuthKit to your project using Swift Package Manager:
 3. Select the version you want to use
 4. Click **Add Package**
 
-## Quick Start
+### Local Development
 
-### 1. Configure Firebase
+For local development or testing:
 
-First, set up Firebase in your project:
+1. Add HKAuthKit as a local package dependency
+2. Point to your local HKAuthKit directory
+3. Build and run your project
 
-1. Add your `GoogleService-Info.plist` to your Xcode project
-2. Configure Firebase in your app's entry point:
+## 🎯 Quick Start
+
+### 1. Configure Firebase and HKAuthKit
+
+Set up Firebase and configure HKAuthKit in your app's entry point:
 
 ```swift
 import SwiftUI
-import FirebaseCore
 import HKAuthKit
 
 @main
 struct MyApp: App {
     init() {
-        FirebaseApp.configure()
-        
-        // Configure HKAuthKit
-        let config = AuthenticationConfiguration(
-            firebaseProjectId: "your-project-id",
-            firebaseApiKey: "your-api-key",
-            firebaseAppId: "your-app-id",
-            appName: "MyApp",
-            primaryColor: .blue,
-            backgroundColor: Color(.systemBackground)
-        )
-        
-        HKAuthKit.configure(with: config)
+        // Configure HKAuthKit (includes Firebase configuration)
+        HKAuthKit.configure(with: AuthenticationConfiguration.default)
     }
     
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onOpenURL { url in
+                    _ = HKAuthKit.handleURL(url)
+                }
         }
     }
 }
@@ -105,9 +103,20 @@ class AuthViewModel: ObservableObject {
         isLoading = false
     }
     
+    func signInWithGoogle() async {
+        isLoading = true
+        do {
+            let user = try await authService.signInWithGoogle()
+            self.user = user
+        } catch {
+            print("Google sign-in failed: \(error)")
+        }
+        isLoading = false
+    }
+    
     func signOut() async {
         do {
-            try await authService.signOut()
+            try authService.signOut()
             self.user = nil
         } catch {
             print("Sign out failed: \(error)")
@@ -142,6 +151,13 @@ struct LoginView: View {
             }
             .disabled(viewModel.isLoading)
             
+            Button("Sign In with Google") {
+                Task {
+                    await viewModel.signInWithGoogle()
+                }
+            }
+            .disabled(viewModel.isLoading)
+            
             if viewModel.isLoading {
                 ProgressView()
             }
@@ -151,20 +167,55 @@ struct LoginView: View {
 }
 ```
 
-## Configuration
+## ⚙️ Configuration
 
 ### AuthenticationConfiguration
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `firebaseProjectId` | `String` | Your Firebase project ID |
-| `firebaseApiKey` | `String` | Your Firebase API key |
-| `firebaseAppId` | `String` | Your Firebase app ID |
-| `appName` | `String` | Your app name for user records |
-| `primaryColor` | `Color` | Primary color for UI elements |
-| `backgroundColor` | `Color` | Background color for UI elements |
+Configure HKAuthKit with your app's specific settings:
 
-## Authentication Methods
+```swift
+let config = AuthenticationConfiguration(
+    firebaseProjectId: "your-project-id",
+    firebaseApiKey: "your-api-key",
+    firebaseAppId: "your-app-id",
+    appName: "MyApp",
+    appLogo: "app-logo",
+    primaryColor: .blue,
+    backgroundColor: Color(.systemBackground),
+    enableGoogleSignIn: true,
+    enableAppleSignIn: true,
+    enableBiometricAuth: false,
+    showSplashScreen: true,
+    minPasswordLength: 8,
+    requireSpecialCharacters: false,
+    requireNumbers: false,
+    splashScreenDuration: 3.0
+)
+
+HKAuthKit.configure(with: config)
+```
+
+### Configuration Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `firebaseProjectId` | `String` | Required | Your Firebase project ID |
+| `firebaseApiKey` | `String` | Required | Your Firebase API key |
+| `firebaseAppId` | `String` | Required | Your Firebase app ID |
+| `appName` | `String` | Required | Your app name for user records |
+| `appLogo` | `String?` | `nil` | Optional app logo identifier |
+| `primaryColor` | `Color` | `.black` | Primary color for UI elements |
+| `backgroundColor` | `Color` | Light gray | Background color for UI elements |
+| `enableGoogleSignIn` | `Bool` | `true` | Enable Google Sign-In |
+| `enableAppleSignIn` | `Bool` | `true` | Enable Apple Sign-In |
+| `enableBiometricAuth` | `Bool` | `false` | Enable biometric authentication |
+| `showSplashScreen` | `Bool` | `true` | Show splash screen |
+| `minPasswordLength` | `Int` | `8` | Minimum password length |
+| `requireSpecialCharacters` | `Bool` | `false` | Require special characters in password |
+| `requireNumbers` | `Bool` | `false` | Require numbers in password |
+| `splashScreenDuration` | `TimeInterval` | `3.0` | Splash screen duration |
+
+## 🔐 Authentication Methods
 
 ### Email/Password Authentication
 
@@ -186,8 +237,19 @@ try await authService.resetPassword(email: "user@example.com")
 ### Google Sign-In
 
 ```swift
+// Sign in with Google
 let user = try await authService.signInWithGoogle()
+
+// Ensure URL handling is set up in your app
+.onOpenURL { url in
+    _ = HKAuthKit.handleURL(url)
+}
 ```
+
+**Setup Requirements:**
+1. Enable Google Sign-In in Firebase Console
+2. Add your `GoogleService-Info.plist` to the project
+3. Configure URL schemes in your app's Info.plist (handled automatically by HKAuthKit)
 
 ### Apple Sign-In
 
@@ -195,7 +257,11 @@ let user = try await authService.signInWithGoogle()
 let user = try await authService.signInWithApple()
 ```
 
-## User Management
+**Setup Requirements:**
+1. Enable Apple Sign-In in Firebase Console
+2. Configure Sign in with Apple capability in your app
+
+## 👤 User Management
 
 ### User Model
 
@@ -207,6 +273,9 @@ public struct User: Codable, Identifiable {
     public let profileImageURL: String?
     public let createdAt: Date
     public let updatedAt: Date
+    
+    // Convenience initializer from Firebase User
+    public init(from firebaseUser: FirebaseUser, fullName: String)
 }
 ```
 
@@ -216,36 +285,49 @@ public struct User: Codable, Identifiable {
 // Get current user
 let currentUser = authService.currentUser
 
+// Check authentication status
+let isAuthenticated = authService.isAuthenticated
+
 // Update user profile
-try await authService.updateUserProfile(fullName: "New Name")
+try await authService.updateProfile(
+    fullName: "New Name",
+    profileImageUrl: "https://example.com/image.jpg"
+)
 
 // Delete user account
-try await authService.deleteUser()
+try await authService.deleteAccount()
 ```
 
-## Validation Utilities
+## ✅ Validation Utilities
 
-HKAuthKit includes built-in validation utilities:
+HKAuthKit includes comprehensive validation utilities:
 
 ```swift
 import HKAuthKit
 
 // Email validation
-let isValidEmail = ValidationUtilities.isValidEmail("user@example.com")
+let isValidEmail = HKAuthKit.validationUtilities.isValidEmail("user@example.com")
 
 // Password validation
-let isValidPassword = ValidationUtilities.isValidPassword("password123")
+let isValidPassword = HKAuthKit.validationUtilities.isValidPassword("password123")
 
 // Name validation
-let isValidName = ValidationUtilities.isValidName("John Doe")
+let isValidName = HKAuthKit.validationUtilities.isValidName("John Doe")
 
 // Password matching
-let passwordsMatch = ValidationUtilities.passwordsMatch("password", "password")
+let passwordsMatch = HKAuthKit.validationUtilities.passwordsMatch("password", "password")
 ```
 
-## Error Handling
+### Validation Rules
 
-HKAuthKit provides comprehensive error handling:
+- **Email**: RFC 5322 compliant email format
+- **Password**: Minimum length, configurable complexity requirements
+- **Name**: Non-empty string with reasonable length limits
+- **Password Matching**: Exact string comparison for confirmation fields
+
+## 🚨 Error Handling
+
+HKAuthKit provides comprehensive error handling with specific error types:
 
 ```swift
 import HKAuthKit
@@ -254,27 +336,38 @@ do {
     let user = try await authService.signIn(email: email, password: password)
 } catch let error as AuthenticationError {
     switch error {
-    case .invalidCredentials:
-        // Handle invalid credentials
+    case .invalidEmail:
+        // Handle invalid email format
     case .userNotFound:
         // Handle user not found
+    case .wrongPassword:
+        // Handle incorrect password
     case .emailAlreadyInUse:
-        // Handle email already in use
+        // Handle email already registered
     case .weakPassword:
         // Handle weak password
     case .networkError:
-        // Handle network error
+        // Handle network connectivity issues
+    case .googleSignInFailed:
+        // Handle Google Sign-In failure
+    case .googleSignInCancelled:
+        // Handle Google Sign-In cancellation
+    case .appleSignInFailed:
+        // Handle Apple Sign-In failure
+    case .userNotFound:
+        // Handle user not found
     case .unknown(let message):
-        // Handle unknown error
+        // Handle unknown error with message
     }
 } catch {
     // Handle other errors
+    print("Unexpected error: \(error)")
 }
 ```
 
-## Testing
+## 🧪 Testing
 
-HKAuthKit is designed to be easily testable:
+HKAuthKit is designed to be easily testable with protocol-based architecture:
 
 ```swift
 import HKAuthKit
@@ -286,7 +379,14 @@ class MockAuthenticationService: AuthenticationServiceProtocol {
     
     func signIn(email: String, password: String) async throws -> User {
         if shouldSucceed {
-            return mockUser ?? User(id: "1", email: email, fullName: "Test User", profileImageURL: nil, createdAt: Date(), updatedAt: Date())
+            return mockUser ?? User(
+                id: "1", 
+                email: email, 
+                fullName: "Test User", 
+                profileImageURL: nil, 
+                createdAt: Date(), 
+                updatedAt: Date()
+            )
         } else {
             throw AuthenticationError.invalidCredentials
         }
@@ -300,38 +400,127 @@ let mockService = MockAuthenticationService()
 let viewModel = AuthViewModel(authenticationService: mockService)
 ```
 
-## Architecture
+## 🏗️ Architecture
 
-HKAuthKit follows a clean architecture pattern:
+HKAuthKit follows clean architecture principles:
+
+### Core Components
 
 - **Models**: `User`, `AuthenticationError`, `AuthenticationConfiguration`
-- **Services**: `AuthenticationServiceProtocol`, `FirebaseAuthenticationService`
+- **Services**: `AuthenticationServiceProtocol`, `FirebaseAuthenticationService`, `GoogleSignInService`
 - **Utilities**: `ValidationUtilities` for input validation
-- **Configuration**: Centralized configuration management
+- **Configuration**: `AuthenticationConfiguration`, `GoogleSignInConfiguration`
+- **Constants**: `AuthenticationConstants` for Firestore field names and collections
 
-## Thread Safety
+### Service Layer
 
-All public APIs are marked with `@MainActor` to ensure thread safety. Authentication operations should be performed on the main thread.
+```swift
+// Protocol-based service interface
+public protocol AuthenticationServiceProtocol {
+    var currentUser: User? { get }
+    var isAuthenticated: Bool { get }
+    
+    func signIn(email: String, password: String) async throws -> User
+    func signUp(email: String, password: String, fullName: String) async throws -> User
+    func signOut() throws
+    func resetPassword(email: String) async throws
+    func signInWithGoogle() async throws -> User
+    func signInWithApple() async throws -> User
+    func updateProfile(fullName: String?, profileImageUrl: String?) async throws -> User
+    func deleteAccount() async throws
+}
 
-## Dependencies
+// Firebase implementation
+public final class FirebaseAuthenticationService: AuthenticationServiceProtocol {
+    // Implementation details...
+}
+```
 
-- Firebase Auth
-- Firebase Firestore
-- Firebase Storage
-- Google Sign-In for iOS
+## 🔒 Thread Safety
 
-## License
+All public APIs are designed with thread safety in mind:
+
+- Authentication operations are marked with appropriate concurrency attributes
+- UI-related operations are marked with `@MainActor`
+- Background operations use `async/await` patterns
+
+## 📦 Dependencies
+
+HKAuthKit manages its own dependencies:
+
+- **Firebase Auth**: User authentication
+- **Firebase Firestore**: User data storage
+- **Firebase Storage**: Profile image storage
+- **Google Sign-In for iOS**: Social authentication
+
+## 🔧 Advanced Configuration
+
+### Custom Configuration
+
+```swift
+// Create custom configuration
+let customConfig = AuthenticationConfiguration(
+    firebaseProjectId: "my-project",
+    firebaseApiKey: "my-api-key",
+    firebaseAppId: "my-app-id",
+    appName: "MyApp",
+    primaryColor: .purple,
+    backgroundColor: .black,
+    enableGoogleSignIn: true,
+    enableAppleSignIn: false,
+    minPasswordLength: 12,
+    requireSpecialCharacters: true,
+    requireNumbers: true
+)
+
+HKAuthKit.configure(with: customConfig)
+```
+
+### URL Scheme Handling
+
+HKAuthKit automatically handles URL schemes for social authentication:
+
+```swift
+// In your app's main view
+.onOpenURL { url in
+    _ = HKAuthKit.handleURL(url)
+}
+```
+
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## Support
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
 
-If you encounter any issues or have questions, please open an issue on GitHub.
+## 🆘 Support
+
+If you encounter any issues or have questions:
+
+1. Check the [Issues](https://github.com/hk9900/HKAuthKit/issues) page
+2. Review Firebase documentation
+3. Open a new issue with detailed information
+
+## 🔄 Changelog
+
+### Version 1.0.0
+- Initial release
+- Email/password authentication
+- Google Sign-In integration
+- Apple Sign-In support
+- Firebase integration
+- Validation utilities
+- Comprehensive error handling
+- Cross-platform support
 
 ---
 
-Made with ❤️ for the SwiftUI community
+**Made with ❤️ for the SwiftUI community**
