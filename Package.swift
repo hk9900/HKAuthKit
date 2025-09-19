@@ -25,9 +25,6 @@ let package = Package(
                 .product(name: "FirebaseFirestore", package: "firebase-ios-sdk"),
                 .product(name: "FirebaseStorage", package: "firebase-ios-sdk"),
                 .product(name: "GoogleSignIn", package: "GoogleSignIn-iOS")
-            ],
-            resources: [
-                .process("Resources")
             ]
         ),
         .testTarget(
