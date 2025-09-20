@@ -260,6 +260,8 @@ let user = try await authService.signInWithApple()
 **Setup Requirements:**
 1. Enable Apple Sign-In in Firebase Console
 2. Configure Sign in with Apple capability in your app
+3. Ensure bundle ID matches between Xcode project and Firebase configuration
+4. Apple Sign-In supports "Hide my email" functionality automatically
 
 ## 👤 User Management
 
@@ -354,6 +356,10 @@ do {
         // Handle Google Sign-In cancellation
     case .appleSignInFailed:
         // Handle Apple Sign-In failure
+    case .appleSignInCancelled:
+        // Handle Apple Sign-In cancellation
+    case .appleSignInNotAvailable:
+        // Handle Apple Sign-In not available
     case .userNotFound:
         // Handle user not found
     case .unknown(let message):
@@ -510,6 +516,14 @@ If you encounter any issues or have questions:
 3. Open a new issue with detailed information
 
 ## 🔄 Changelog
+
+### Version 1.1.0
+- ✅ Complete Apple Sign-In implementation with "Hide my email" support
+- ✅ Fixed bundle ID validation and audience error handling
+- ✅ Enhanced error handling with specific Apple Sign-In error types
+- ✅ Improved debugging and logging capabilities
+- ✅ Better email handling for Apple Sign-In privacy options
+- ✅ Comprehensive error mapping for all authentication methods
 
 ### Version 1.0.0
 - Initial release

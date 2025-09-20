@@ -8,6 +8,8 @@ public enum AuthenticationError: LocalizedError, Equatable {
     case weakPassword
     case googleSignInFailed
     case appleSignInFailed
+    case appleSignInCancelled
+    case appleSignInNotAvailable
     case networkError
     case unknown(String)
     
@@ -26,7 +28,11 @@ public enum AuthenticationError: LocalizedError, Equatable {
         case .googleSignInFailed:
             return "Google Sign-In failed."
         case .appleSignInFailed:
-            return "Apple Sign-In failed."
+            return "Apple Sign-In failed. Please try again."
+        case .appleSignInCancelled:
+            return "Apple Sign-In was cancelled."
+        case .appleSignInNotAvailable:
+            return "Apple Sign-In is not available on this device."
         case .networkError:
             return "Please check your internet connection."
         case .unknown(let message):
@@ -43,6 +49,8 @@ public enum AuthenticationError: LocalizedError, Equatable {
              (.weakPassword, .weakPassword),
              (.googleSignInFailed, .googleSignInFailed),
              (.appleSignInFailed, .appleSignInFailed),
+             (.appleSignInCancelled, .appleSignInCancelled),
+             (.appleSignInNotAvailable, .appleSignInNotAvailable),
              (.networkError, .networkError):
             return true
         case (.unknown(let lhsMessage), .unknown(let rhsMessage)):
