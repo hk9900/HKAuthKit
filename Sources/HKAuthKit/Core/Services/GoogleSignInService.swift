@@ -12,7 +12,7 @@ public final class GoogleSignInService {
     
     private init() {}
     
-    public func signIn() async throws -> User {
+    public func signIn() async throws -> FirebaseAuth.User {
         #if canImport(UIKit)
         guard let presentingViewController = await getPresentingViewController() as? UIViewController else {
             throw AuthenticationError.googleSignInFailed
@@ -53,7 +53,7 @@ public final class GoogleSignInService {
                 profileImageUrl: profileImageUrl
             )
             
-            return User(from: firebaseUser, fullName: fullName)
+            return firebaseUser
             
         } catch {
             throw mapGoogleSignInError(error)

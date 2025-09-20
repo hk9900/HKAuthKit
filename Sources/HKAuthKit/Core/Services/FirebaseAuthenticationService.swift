@@ -18,9 +18,8 @@ public final class FirebaseAuthenticationService: AuthenticationServiceProtocol 
     
     private init() {}
     
-    public var currentUser: User? {
-        guard let firebaseUser = auth.currentUser else { return nil }
-        return User(from: firebaseUser, fullName: firebaseUser.displayName ?? "")
+    public var currentUser: FirebaseAuth.User? {
+        return auth.currentUser
     }
     
     public var isAuthenticated: Bool {
@@ -29,17 +28,16 @@ public final class FirebaseAuthenticationService: AuthenticationServiceProtocol 
     
     // MARK: - Email/Password Authentication
     
-    public func signIn(email: String, password: String) async throws -> User {
+    public func signIn(email: String, password: String) async throws -> FirebaseAuth.User {
         do {
             let result = try await auth.signIn(withEmail: email, password: password)
-            let user = try await fetchUserData(uid: result.user.uid)
-            return user
+            return result.user
         } catch {
             throw mapFirebaseError(error)
         }
     }
     
-    public func signUp(email: String, password: String, fullName: String) async throws -> User {
+    public func signUp(email: String, password: String, fullName: String) async throws -> FirebaseAuth.User {
         do {
             let result = try await auth.createUser(withEmail: email, password: password)
             
@@ -48,16 +46,7 @@ public final class FirebaseAuthenticationService: AuthenticationServiceProtocol 
             changeRequest.displayName = fullName
             try await changeRequest.commitChanges()
             
-            // Ensure user is properly authenticated before writing to Firestore
-            guard let currentUser = auth.currentUser, currentUser.uid == result.user.uid else {
-                throw AuthenticationError.unknown("User authentication failed")
-            }
-            
-            // Create user document in Firestore
-            let user = User(from: result.user, fullName: fullName)
-            try await createUserDocument(user)
-            
-            return user
+            return result.user
         } catch {
             throw mapFirebaseError(error)
         }
@@ -100,11 +89,11 @@ public final class FirebaseAuthenticationService: AuthenticationServiceProtocol 
     
     // MARK: - Social Authentication
     
-    public func signInWithGoogle() async throws -> User {
+    public func signInWithGoogle() async throws -> FirebaseAuth.User {
         return try await GoogleSignInService.shared.signIn()
     }
     
-    public func signInWithApple() async throws -> User {
+    public func signInWithApple() async throws -> FirebaseAuth.User {
         #if canImport(AuthenticationServices) && canImport(UIKit)
             do {
                 // Create Apple ID credential request
@@ -184,7 +173,7 @@ public final class FirebaseAuthenticationService: AuthenticationServiceProtocol 
             )
             
             print("🍎 Apple Sign-In completed successfully for user: \(fullName.isEmpty ? "Apple User" : fullName)")
-            return User(from: firebaseUser, fullName: fullName.isEmpty ? "Apple User" : fullName)
+            return firebaseUser
             
         } catch {
             print("🍎 Apple Sign-In error: \(error.localizedDescription)")
@@ -227,7 +216,7 @@ public final class FirebaseAuthenticationService: AuthenticationServiceProtocol 
     
     // MARK: - User Management
     
-    public func updateProfile(fullName: String?, profileImageUrl: String?) async throws -> User {
+    public func updateProfile(fullName: String?, profileImageUrl: String?) async throws -> FirebaseAuth.User {
         guard let user = auth.currentUser else {
             throw AuthenticationError.userNotFound
         }
@@ -245,7 +234,7 @@ public final class FirebaseAuthenticationService: AuthenticationServiceProtocol 
             // Update Firestore document
             try await updateUserDocument(uid: user.uid, fullName: fullName, profileImageUrl: profileImageUrl)
             
-            return User(from: user, fullName: fullName ?? user.displayName ?? "")
+            return user
         } catch {
             throw mapFirebaseError(error)
         }
@@ -281,77 +270,12 @@ public final class FirebaseAuthenticationService: AuthenticationServiceProtocol 
         throw AuthenticationError.unknown("Biometric authentication not implemented")
     }
     
-    public func authenticateWithBiometrics() async throws -> User {
+    public func authenticateWithBiometrics() async throws -> FirebaseAuth.User {
         // Placeholder implementation
         throw AuthenticationError.unknown("Biometric authentication not implemented")
     }
     
     // MARK: - Private Helpers
-    
-    private func createUserDocument(_ user: User) async throws {
-        let data: [String: Any] = [
-            AuthenticationConstants.UserFields.id: user.id,
-            AuthenticationConstants.UserFields.email: user.email,
-            AuthenticationConstants.UserFields.fullName: user.fullName,
-            AuthenticationConstants.UserFields.createdAt: user.createdAt,
-            AuthenticationConstants.UserFields.updatedAt: user.updatedAt,
-            AuthenticationConstants.UserFields.profileImageUrl: user.profileImageUrl ?? "",
-            AuthenticationConstants.UserFields.isEmailVerified: user.isEmailVerified
-        ]
-        try await firestore.collection(AuthenticationConstants.FirestoreCollections.users)
-            .document(user.id)
-            .setData(data)
-    }
-    
-    private func fetchUserData(uid: String) async throws -> User {
-        let document = try await firestore.collection(AuthenticationConstants.FirestoreCollections.users)
-            .document(uid)
-            .getDocument()
-        
-        guard document.exists,
-              let data = document.data() else {
-            throw AuthenticationError.unknown("User data not found")
-        }
-        
-        guard let id = data[AuthenticationConstants.UserFields.id] as? String,
-              let email = data[AuthenticationConstants.UserFields.email] as? String,
-              let fullName = data[AuthenticationConstants.UserFields.fullName] as? String else {
-            throw AuthenticationError.unknown("Invalid user data format")
-        }
-        
-        // Handle Firestore Timestamps
-        let createdAt: Date
-        let updatedAt: Date
-        
-        if let createdAtTimestamp = data[AuthenticationConstants.UserFields.createdAt] as? Timestamp {
-            createdAt = createdAtTimestamp.dateValue()
-        } else if let createdAtDate = data[AuthenticationConstants.UserFields.createdAt] as? Date {
-            createdAt = createdAtDate
-        } else {
-            createdAt = Date()
-        }
-        
-        if let updatedAtTimestamp = data[AuthenticationConstants.UserFields.updatedAt] as? Timestamp {
-            updatedAt = updatedAtTimestamp.dateValue()
-        } else if let updatedAtDate = data[AuthenticationConstants.UserFields.updatedAt] as? Date {
-            updatedAt = updatedAtDate
-        } else {
-            updatedAt = Date()
-        }
-        
-        let profileImageUrl = data[AuthenticationConstants.UserFields.profileImageUrl] as? String
-        let isEmailVerified = data[AuthenticationConstants.UserFields.isEmailVerified] as? Bool ?? false
-        
-        return User(
-            id: id,
-            email: email,
-            fullName: fullName,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            profileImageUrl: profileImageUrl,
-            isEmailVerified: isEmailVerified
-        )
-    }
     
     
     private func updateUserDocument(uid: String, fullName: String?, profileImageUrl: String?) async throws {

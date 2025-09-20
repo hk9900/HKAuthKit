@@ -16,7 +16,6 @@ public final class GoogleSignInConfiguration {
         }
         
         GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientId)
-        print("🔐 Google Sign-In configured successfully")
     }
     
     public func handleURL(_ url: URL) -> Bool {
